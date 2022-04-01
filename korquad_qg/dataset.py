@@ -31,18 +31,21 @@ class QGDataset(Dataset):
         self.tokenizer = tokenizer
         self.max_sequence_length = max_sequence_length
 
-        self.sos_token = tokenizer.token_to_id("<s>")
-        self.eos_token = tokenizer.token_to_id("</s>")
-        self.question_prefix_tokens = self.tokenizer.encode("질문:").ids
+        # self.sos_token = tokenizer._convert_id_to_token("[CLS]")
+        self.sos_token = 0
+        # self.eos_token = tokenizer.token_to_id("[SEP]")
+        self.eos_token = 1
+        # self.question_prefix_tokens = self.tokenizer.encode("질문:").ids
+        self.question_prefix_tokens = self.tokenizer.encode("질문:")
 
         self.is_train = is_train
 
     def __getitem__(self, index: int) -> GPTFeaturesType:
         example = self.examples[index]
 
-        context_tokens = self.tokenizer.encode(f"문맥:{example.context}").ids
-        answer_tokens = self.tokenizer.encode(f"정답:{example.answer}").ids
-        question_tokens = self.tokenizer.encode(f"{example.question}").ids
+        context_tokens = self.tokenizer.encode(f"문맥:{example.context}")
+        answer_tokens = self.tokenizer.encode(f"정답:{example.answer}")
+        question_tokens = self.tokenizer.encode(f"{example.question}")
 
         # [SOS] + 문맥:CONTEXT + 정답:ANSWER + 질문:
         conditional_tokens_len = 1 + len(context_tokens) + len(answer_tokens) + len(self.question_prefix_tokens)
@@ -90,8 +93,8 @@ class QGDecodingDataset(QGDataset):
     def __getitem__(self, index: int) -> GPTDecodingInputType:
         example = self.examples[index]
 
-        context_tokens = self.tokenizer.encode(f"문맥:{example.context}").ids
-        answer_tokens = self.tokenizer.encode(f"정답:{example.answer}").ids
+        context_tokens = self.tokenizer.encode(f"문맥:{example.context}")
+        answer_tokens = self.tokenizer.encode(f"정답:{example.answer}")
 
         # [SOS] + CONTEXT + ANSWER + 정답:
         conditional_tokens_len = 1 + len(context_tokens) + len(answer_tokens) + len(self.question_prefix_tokens)

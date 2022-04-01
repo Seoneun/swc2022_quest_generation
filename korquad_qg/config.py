@@ -5,7 +5,7 @@ class QGConfig(NamedTuple):
     train_dataset: str = "data/train.json"
     dev_dataset: str = "data/dev.json"
 
-    gpt_model_hub_name: str = "taeminlee/kogpt2"
+    gpt_model_hub_name: str = "monologg/kobert"
     vocab_path: str = "tokenizer/vocab.json"
     tokenizer_merges_path: str = "tokenizer/merges.txt"
 

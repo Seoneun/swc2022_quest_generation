@@ -3,9 +3,11 @@ from argparse import ArgumentParser
 
 import torch
 from tokenizers import SentencePieceBPETokenizer
+from kobert_tokenizer import KoBERTTokenizer
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import GPT2LMHeadModel
+from transformers import BertLMHeadModel
 
 from korquad_qg.config import QGConfig
 from korquad_qg.dataset import MAX_QUESTION_SPACE, MIN_QUESTION_SPACE, QGDecodingDataset, load_korquad_dataset
@@ -21,14 +23,20 @@ def main():
     config = QGConfig()
     args = parser.parse_args()
 
-    model = GPT2LMHeadModel.from_pretrained("taeminlee/kogpt2")
+    # model = GPT2LMHeadModel.from_pretrained("taeminlee/kogpt2")
+    model = BertLMHeadModel.from_pretrained("skt/kobert-base-v1")
     model.load_state_dict(torch.load(args.model_path, map_location="cpu"))
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
 
+    '''
     tokenizer = SentencePieceBPETokenizer.from_file(
         vocab_filename="tokenizer/vocab.json", merges_filename="tokenizer/merges.txt", add_prefix_space=False
     )
+    '''
+
+    tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
+
     examples = load_korquad_dataset(config.dev_dataset)
     random.shuffle(examples)
     examples = examples[: args.num_samples]

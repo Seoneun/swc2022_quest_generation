@@ -7,10 +7,13 @@ from datetime import datetime
 import numpy as np
 import torch
 from tokenizers import SentencePieceBPETokenizer
+from tokenizers import BertWordPieceTokenizer
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import GPT2LMHeadModel, get_linear_schedule_with_warmup
+from transformers import BertLMHeadModel
+from kobert_tokenizer import KoBERTTokenizer
 
 from korquad_qg.config import QGConfig
 from korquad_qg.dataset import QGDataset, dynamic_padding_collate_fn, load_korquad_dataset
@@ -39,9 +42,13 @@ def main(config: QGConfig):
     logger.info("============================")
     torch.manual_seed(config.random_seed)
 
+    '''
     tokenizer = SentencePieceBPETokenizer.from_file(
         vocab_filename=config.vocab_path, merges_filename=config.tokenizer_merges_path, add_prefix_space=False
     )
+    '''
+
+    tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
 
     logger.info("loading train dataset")
     train_examples = load_korquad_dataset(config.train_dataset)
@@ -56,7 +63,8 @@ def main(config: QGConfig):
     dev_dataloader = DataLoader(dev_dataset, config.eval_batch_size, collate_fn=dynamic_padding_collate_fn)
 
     # model 생성
-    model = GPT2LMHeadModel.from_pretrained(config.gpt_model_hub_name)
+    # model = GPT2LMHeadModel.from_pretrained(config.gpt_model_hub_name)
+    model = BertLMHeadModel.from_pretrained("skt/kobert-base-v1")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
@@ -97,13 +105,13 @@ def main(config: QGConfig):
 
             if global_step % config.save_interval == 0:
                 state_dict = model.state_dict()
-                model_path = os.path.join(config.output_dir, f"gpt2_step_{global_step}.pth")
+                model_path = os.path.join(config.output_dir, f"bert_step_{global_step}.pth")
                 logger.info(f"global_step: {global_step} model saved at {model_path}")
                 torch.save(state_dict, model_path)
 
 
 def _validate(
-    model: GPT2LMHeadModel,
+    model: BertLMHeadModel,
     dev_dataloader: DataLoader,
     device: torch.device,
     logger: logging.Logger,
@@ -141,7 +149,7 @@ if __name__ == "__main__":
     kwargs = {key: value for key, value in vars(parser.parse_args()).items() if value is not None}
 
     timestamp = datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
-    artifacts_dir = os.path.join(kwargs["output_dir"], f"gpt2_{timestamp}")
+    artifacts_dir = os.path.join(kwargs["output_dir"], f"bert_{timestamp}")
     os.makedirs(artifacts_dir, exist_ok=True)
     kwargs["output_dir"] = artifacts_dir
 
